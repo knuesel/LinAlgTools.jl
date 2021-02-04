@@ -1,6 +1,8 @@
 using LinAlgTools
 using Documenter
 
+DocMeta.setdocmeta!(LinAlgTools, :DocTestSetup, :(using LinAlgTools); recursive=true)
+
 makedocs(;
     modules=[LinAlgTools],
     authors="Jeremie Knuesel <knuesel@gmail.com> and contributors",
@@ -13,6 +15,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "API" => "api.md",
     ],
 )
 

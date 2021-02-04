@@ -4,9 +4,4 @@ CurrentModule = LinAlgTools
 
 # LinAlgTools
 
-```@index
-```
-
-```@autodocs
-Modules = [LinAlgTools]
-```
+Tools for teaching linear algebra.

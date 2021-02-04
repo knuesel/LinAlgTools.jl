@@ -1,5 +1,5 @@
 module LinAlgTools
 
-# Write your package code here.
+include("gaussian_elimination.jl")
 
 end

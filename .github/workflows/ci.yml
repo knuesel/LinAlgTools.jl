@@ -51,6 +51,7 @@ jobs:
           julia --project=docs -e '
             using Documenter: doctest
             using LinAlgTools
+            DocMeta.setdocmeta!(LinAlgTools, :DocTestSetup, :(using LinAlgTools); recursive=true)
             doctest(LinAlgTools)'
       - run: julia --project=docs docs/make.jl
         env:
