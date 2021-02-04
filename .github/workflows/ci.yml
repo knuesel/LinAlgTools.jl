@@ -49,7 +49,7 @@ jobs:
             Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
-            using Documenter: doctest
+            using Documenter: doctest, DocMeta
             using LinAlgTools
             DocMeta.setdocmeta!(LinAlgTools, :DocTestSetup, :(using LinAlgTools); recursive=true)
             doctest(LinAlgTools)'
