@@ -1,11 +1,19 @@
-export row_swap!, row_mul!, row_add!, ref!, rref!
+export row_swap!, row_mul!, row_add!, ref!, rref!,
+       row_swap,  row_mul,  row_add,  ref,  rref
+
+# Call f on a copy of A and return the (modified) copy
+function with_copy(f, A, args...; kwargs...)
+  B = copy(A)
+  f(B, args...; kwargs...)
+  return B
+end
 
 """
     row_swap!(A, i, j)
 
 Swap rows `i` and `j` in matrix `A`.
 
-Returns the two rows in the new order.
+Returns a copy of the two rows in the new order.
 
 # Example
 
@@ -31,11 +39,9 @@ julia> A
 row_swap!(A, i, j) = A[[i,j], :] = A[[j,i], :]
 
 """
-    row_mul!(A, i, λ)
+    row_swap(A, i, j)
 
-Multiply row `i` of matrix `A` by a factor `λ`.
-
-Returns the new row `i`.
+Create a matrix equal to `A` but with rows `i` and `j` swapped.
 
 # Example
 
@@ -46,7 +52,32 @@ julia> A = reshape(1:12, 3, 4) |> collect
  2  5  8  11
  3  6  9  12
 
-julia> row_mul!(A, 2, 100)
+julia> row_swap(A, 1, 3)
+3×4 Array{Int64,2}:
+ 3  6  9  12
+ 2  5  8  11
+ 1  4  7  10
+```
+"""
+row_swap(A, i, j) = with_copy(row_swap!, A, i, j)
+
+"""
+    row_mul!(A, i, by=λ)
+
+Multiply row `i` of matrix `A` by a factor `λ`.
+
+Returns a copy of the new row `i`.
+
+# Example
+
+```jldoctest
+julia> A = reshape(1:12, 3, 4) |> collect
+3×4 Array{Int64,2}:
+ 1  4  7  10
+ 2  5  8  11
+ 3  6  9  12
+
+julia> row_mul!(A, 2, by=100)
 4-element Array{Int64,1}:
   200
   500
@@ -60,14 +91,37 @@ julia> A
    3    6    9    12
 ```
 """
-row_mul!(A, i, λ) = A[i, :] *= λ
+row_mul!(A, i; by) = A[i, :] *= by
 
 """
-    row_add!(A, i, λ, i₀)
+    row_mul(A, i, by=λ)
 
-Add to row `i` of matrix `A` row `i₀` multiplied by `λ`.
+Create a matrix equal to `A` but with row `i` multiplied by `λ`.
 
-Returns the new row `i`.
+# Example
+
+```jldoctest
+julia> A = reshape(1:12, 3, 4) |> collect
+3×4 Array{Int64,2}:
+ 1  4  7  10
+ 2  5  8  11
+ 3  6  9  12
+
+julia> row_mul(A, 2, by=100)
+3×4 Array{Int64,2}:
+   1    4    7    10
+ 200  500  800  1100
+   3    6    9    12
+```
+"""
+row_mul(A, i; by) = with_copy(row_mul!, A, i; by)
+
+"""
+    row_add!(A, i=>j, λ)
+
+Add row `i` multiplied by `λ` to row `j` of matrix `A`.
+
+Returns a copy of the new row `j`.
 
 # Example
 
@@ -78,7 +132,7 @@ julia> A = [i//j for i in 1:3, j in 1:4]
  2//1  1//1  2//3  1//2
  3//1  3//2  1//1  3//4
 
-julia> row_add!(A, 3, -3, 1)
+julia> row_add!(A, 1=>3, -3)
 4-element Array{Rational{Int64},1}:
  0//1
  0//1
@@ -92,7 +146,30 @@ julia> A
  0//1  0//1  0//1  0//1
 ```
 """
-row_add!(A, i, λ, i₀) =  A[i, :] += λ * A[i₀, :]
+row_add!(A, (i,j)::Pair, λ) = A[j, :] += λ * A[i, :]
+
+"""
+    row_add(A, i=>j, λ)
+
+Create a matrix equal to `A` but with `λ` times row `i` added to row `j`.
+
+# Example
+
+```jldoctest
+julia> A = [i//j for i in 1:3, j in 1:4]
+3×4 Array{Rational{Int64},2}:
+ 1//1  1//2  1//3  1//4
+ 2//1  1//1  2//3  1//2
+ 3//1  3//2  1//1  3//4
+
+julia> row_add(A, 1=>3, -3)
+3×4 Array{Rational{Int64},2}:
+ 1//1  1//2  1//3  1//4
+ 2//1  1//1  2//3  1//2
+ 0//1  0//1  0//1  0//1
+```
+"""
+row_add(A, (i,j)::Pair, λ) = with_copy(row_add!, A, i=>j, λ)
 
 """
     ref_pass!(A)
@@ -109,14 +186,14 @@ function ref_pass!(A)
 
   # Move pivot to first row if not there already
   if A[1, col] == 0
-    row = findfirst(!iszero, A[:, col])
+    row = findfirst(!iszero, @view A[:, col])
     row_swap!(A, 1, row)
   end
 
   # Use row operations to bring zeros under the pivot
   for row in 2:size(A, 1)
     if A[row, col] != 0
-      row_add!(A, row, -A[row, col]/A[1, col], 1)
+      row_add!(A, 1=>row, -A[row, col]/A[1, col])
     end
   end
 
@@ -126,21 +203,22 @@ end
 """
     log(A, txt)
 
-Show matrix `A` with title text `txt`.
+Write matrix `A` with title text `txt` to standard output.
 """
 function log(A, txt)
   println(txt)
   println(repeat('-', length(txt)))
-  display(A)
+  show(stdout, MIME("text/plain"), A)
+  println()
   println()
 end
 
 """
     ref!(A; show_steps=false)
 
-Put A in row echelon form.
+Put `A` in row echelon form.
 
-Returns the (row, column) indices of the pivots.
+Returns the `(row, column)` indices of the pivots.
 
 # Example
 
@@ -185,11 +263,38 @@ function ref!(A; show_steps=false)
 end
 
 """
+    ref(A; show_steps=false)
+
+Compute a row echelon form of `A`.
+
+Returns the `(row, column)` indices of the pivots.
+
+# Example
+
+```jldoctest
+julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
+4×6 Array{Float64,2}:
+ 2.0  0.0  1.0  2.0  0.0  1.0
+ 0.0  1.0  2.0  0.0  1.0  2.0
+ 1.0  2.0  0.0  1.0  2.0  0.0
+ 2.0  0.0  1.0  2.0  0.0  1.0
+
+julia> ref(A)
+4×6 Array{Float64,2}:
+ 2.0  0.0   1.0  2.0  0.0   1.0
+ 0.0  1.0   2.0  0.0  1.0   2.0
+ 0.0  0.0  -4.5  0.0  0.0  -4.5
+ 0.0  0.0   0.0  0.0  0.0   0.0
+```
+"""
+ref(A; show_steps=false) = with_copy(ref!, A; show_steps)
+
+"""
     rref!(A; show_steps)
 
-Compute the reduced row echelon form of A.
+Put `A` in the reduced row echelon form.
 
-Returns the (row, column) indices of the pivots.
+Returns the `(row, column)` indices of the pivots.
 
 # Example
 
@@ -223,14 +328,39 @@ function rref!(A; show_steps=false)
   for (row, col) in reverse(pivots)
     # Multiply row to have pivot = 1
     pivot = A[row, col]
-    row_mul!(A, row, inv(pivot))
+    row_mul!(A, row, by=inv(pivot))
     show_steps && log(A, "Reduce $((row,col)) $pivot -> 1")
 
     # Ensure all zeros above the pivot
     for i in 1:row-1
-      row_add!(A, i, -A[i, col], row)
+      row_add!(A, row=>i, -A[i, col])
     end
-    show_steps && log(A, "Reduce above/below $((row,col))")
+    show_steps && log(A, "Reduce above $((row,col))")
   end
   return pivots
 end
+
+"""
+    rref(A; show_steps)
+
+Compute the reduced row echelon form of `A`.
+
+# Example
+
+```jldoctest
+julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
+4×6 Array{Float64,2}:
+ 2.0  0.0  1.0  2.0  0.0  1.0
+ 0.0  1.0  2.0  0.0  1.0  2.0
+ 1.0  2.0  0.0  1.0  2.0  0.0
+ 2.0  0.0  1.0  2.0  0.0  1.0
+
+julia> rref(A)
+4×6 Array{Float64,2}:
+  1.0   0.0  0.0   1.0   0.0  0.0
+  0.0   1.0  0.0   0.0   1.0  0.0
+ -0.0  -0.0  1.0  -0.0  -0.0  1.0
+  0.0   0.0  0.0   0.0   0.0  0.0
+```
+"""
+rref(A; show_steps=false) = with_copy(rref!, A; show_steps)
