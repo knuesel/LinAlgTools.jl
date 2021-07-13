@@ -4,14 +4,14 @@ CurrentModule = LinAlgTools
 
 # LinAlgTools
 
-Tools for playing with linear algebra. For now just a textbook implementation
-of Gaussian elimination.
+Tools for teaching linear algebra. For now just a textbook implementation of
+Gaussian elimination.
 
 ## Gaussian Elimination
 
 The algorithm rarely works with matrices of integer type since they generally
 cannot store the results of the multiplications by non-integers. However
-rational arrays work well:
+rational arrays generally work well for small matrices:
 
 ```@repl gauss
 A = Rational[ 4  2   0  -5   0   5
@@ -19,6 +19,11 @@ A = Rational[ 4  2   0  -5   0   5
               2  2   2  -3   2   5
               5  4   3  -3  -2  -2 ]
 ```
+
+Of course as the number of operations increases the fractions can become
+unwieldy, and overflow unless e.g. `Rational{BigInt}` is used.
+
+With SymPy.jl it is also possible to use symbolic matrices.
 
 The functions [`ref`](@ref) and [`rref`](@ref) compute the row echelon form and
 reduced row echelon form respectively. An optional `show_steps` argument can be

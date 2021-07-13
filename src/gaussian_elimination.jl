@@ -328,14 +328,18 @@ function rref!(A; show_steps=false)
   for (row, col) in reverse(pivots)
     # Multiply row to have pivot = 1
     pivot = A[row, col]
-    row_mul!(A, row, by=inv(pivot))
-    show_steps && log(A, "Reduce $((row,col)) $pivot -> 1")
+    if pivot != 1
+        row_mul!(A, row, by=inv(pivot))
+        show_steps && log(A, "Reduce $((row,col)) $pivot -> 1")
+    end
 
     # Ensure all zeros above the pivot
-    for i in 1:row-1
-      row_add!(A, row=>i, -A[i, col])
+    if !all(iszero, A[1:row-1, col])
+        for i in 1:row-1
+            row_add!(A, row=>i, -A[i, col])
+        end
+        show_steps && log(A, "Reduce above $((row,col))")
     end
-    show_steps && log(A, "Reduce above $((row,col))")
   end
   return pivots
 end
