@@ -9,6 +9,11 @@ Gaussian elimination.
 
 ## Gaussian Elimination
 
+The implementation is very simple and not particularly robust:
+
+Pivot search and reduction are performed using exact comparison with 0 even
+when matrix elements are floating point numbers.
+
 The algorithm rarely works with matrices of integer type since they generally
 cannot store the results of the multiplications by non-integers. However
 rational arrays generally work well for small matrices:
@@ -49,8 +54,8 @@ Elementary row operations are available as [`row_swap`](@ref),
 
 ```@repl gauss
 row_swap(B, 1, 2)
-row_mul(B, 1, by=10)
-row_add(B, 1=>2, -1)
+row_mul(B, 1 => 10)
+row_add(B, 1 => -1 => 2)
 ```
 
 The variants [`row_swap!`](@ref), [`row_mul!`](@ref), [`row_add!`](@ref) modify

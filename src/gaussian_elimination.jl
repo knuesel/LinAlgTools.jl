@@ -19,18 +19,18 @@ Returns a copy of the two rows in the new order.
 
 ```jldoctest
 julia> A = reshape(1:12, 3, 4) |> collect
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  1  4  7  10
  2  5  8  11
  3  6  9  12
 
 julia> row_swap!(A, 1, 3)
-2×4 Array{Int64,2}:
+2×4 Matrix{Int64}:
  3  6  9  12
  1  4  7  10
 
 julia> A
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  3  6  9  12
  2  5  8  11
  1  4  7  10
@@ -47,13 +47,13 @@ Create a matrix equal to `A` but with rows `i` and `j` swapped.
 
 ```jldoctest
 julia> A = reshape(1:12, 3, 4) |> collect
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  1  4  7  10
  2  5  8  11
  3  6  9  12
 
 julia> row_swap(A, 1, 3)
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  3  6  9  12
  2  5  8  11
  1  4  7  10
@@ -62,7 +62,7 @@ julia> row_swap(A, 1, 3)
 row_swap(A, i, j) = with_copy(row_swap!, A, i, j)
 
 """
-    row_mul!(A, i, by=λ)
+    row_mul!(A, i => λ)
 
 Multiply row `i` of matrix `A` by a factor `λ`.
 
@@ -72,29 +72,29 @@ Returns a copy of the new row `i`.
 
 ```jldoctest
 julia> A = reshape(1:12, 3, 4) |> collect
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  1  4  7  10
  2  5  8  11
  3  6  9  12
 
-julia> row_mul!(A, 2, by=100)
-4-element Array{Int64,1}:
+julia> row_mul!(A, 2 => 100)
+4-element Vector{Int64}:
   200
   500
   800
  1100
 
 julia> A
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
    1    4    7    10
  200  500  800  1100
    3    6    9    12
 ```
 """
-row_mul!(A, i; by) = A[i, :] *= by
+row_mul!(A, (i, factor)) = A[i, :] *= factor
 
 """
-    row_mul(A, i, by=λ)
+    row_mul(A, i => factor)
 
 Create a matrix equal to `A` but with row `i` multiplied by `λ`.
 
@@ -102,22 +102,22 @@ Create a matrix equal to `A` but with row `i` multiplied by `λ`.
 
 ```jldoctest
 julia> A = reshape(1:12, 3, 4) |> collect
-3×4 Array{Int64,2}:
+3×4 Matrix{Int64}:
  1  4  7  10
  2  5  8  11
  3  6  9  12
 
-julia> row_mul(A, 2, by=100)
-3×4 Array{Int64,2}:
+julia> row_mul(A, 2 => 100)
+3×4 Matrix{Int64}:
    1    4    7    10
  200  500  800  1100
    3    6    9    12
 ```
 """
-row_mul(A, i; by) = with_copy(row_mul!, A, i; by)
+row_mul(A, (i, factor)) = with_copy(row_mul!, A, i => factor)
 
 """
-    row_add!(A, i=>j, λ)
+    row_add!(A, i => λ => j)
 
 Add row `i` multiplied by `λ` to row `j` of matrix `A`.
 
@@ -127,29 +127,29 @@ Returns a copy of the new row `j`.
 
 ```jldoctest
 julia> A = [i//j for i in 1:3, j in 1:4]
-3×4 Array{Rational{Int64},2}:
+3×4 Matrix{Rational{Int64}}:
  1//1  1//2  1//3  1//4
  2//1  1//1  2//3  1//2
  3//1  3//2  1//1  3//4
 
-julia> row_add!(A, 1=>3, -3)
-4-element Array{Rational{Int64},1}:
+julia> row_add!(A, 1 => -3 => 3)
+4-element Vector{Rational{Int64}}:
  0//1
  0//1
  0//1
  0//1
 
 julia> A
-3×4 Array{Rational{Int64},2}:
+3×4 Matrix{Rational{Int64}}:
  1//1  1//2  1//3  1//4
  2//1  1//1  2//3  1//2
  0//1  0//1  0//1  0//1
 ```
 """
-row_add!(A, (i,j)::Pair, λ) = A[j, :] += λ * A[i, :]
+row_add!(A, (i, (λ, j))) = A[j, :] += λ * A[i, :]
 
 """
-    row_add(A, i=>j, λ)
+    row_add(A, i => λ => j)
 
 Create a matrix equal to `A` but with `λ` times row `i` added to row `j`.
 
@@ -157,19 +157,19 @@ Create a matrix equal to `A` but with `λ` times row `i` added to row `j`.
 
 ```jldoctest
 julia> A = [i//j for i in 1:3, j in 1:4]
-3×4 Array{Rational{Int64},2}:
+3×4 Matrix{Rational{Int64}}:
  1//1  1//2  1//3  1//4
  2//1  1//1  2//3  1//2
  3//1  3//2  1//1  3//4
 
-julia> row_add(A, 1=>3, -3)
-3×4 Array{Rational{Int64},2}:
+julia> row_add(A, 1 => -3 => 3)
+3×4 Matrix{Rational{Int64}}:
  1//1  1//2  1//3  1//4
  2//1  1//1  2//3  1//2
  0//1  0//1  0//1  0//1
 ```
 """
-row_add(A, (i,j)::Pair, λ) = with_copy(row_add!, A, i=>j, λ)
+row_add(A, (i, (λ, j))) = with_copy(row_add!, A, i => λ => j)
 
 """
     ref_pass!(A)
@@ -193,7 +193,7 @@ function ref_pass!(A)
   # Use row operations to bring zeros under the pivot
   for row in 2:size(A, 1)
     if A[row, col] != 0
-      row_add!(A, 1=>row, -A[row, col]/A[1, col])
+      row_add!(A, 1 => -A[row, col]/A[1, col] => row)
     end
   end
 
@@ -224,20 +224,20 @@ Returns the `(row, column)` indices of the pivots.
 
 ```jldoctest
 julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0  1.0  2.0  0.0  1.0
  0.0  1.0  2.0  0.0  1.0  2.0
  1.0  2.0  0.0  1.0  2.0  0.0
  2.0  0.0  1.0  2.0  0.0  1.0
 
 julia> ref!(A)
-3-element Array{Tuple{Int64,Int64},1}:
+3-element Vector{Tuple{Int64, Int64}}:
  (1, 1)
  (2, 2)
  (3, 3)
 
 julia> A
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0   1.0  2.0  0.0   1.0
  0.0  1.0   2.0  0.0  1.0   2.0
  0.0  0.0  -4.5  0.0  0.0  -4.5
@@ -273,14 +273,14 @@ Returns the `(row, column)` indices of the pivots.
 
 ```jldoctest
 julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0  1.0  2.0  0.0  1.0
  0.0  1.0  2.0  0.0  1.0  2.0
  1.0  2.0  0.0  1.0  2.0  0.0
  2.0  0.0  1.0  2.0  0.0  1.0
 
 julia> ref(A)
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0   1.0  2.0  0.0   1.0
  0.0  1.0   2.0  0.0  1.0   2.0
  0.0  0.0  -4.5  0.0  0.0  -4.5
@@ -300,20 +300,20 @@ Returns the `(row, column)` indices of the pivots.
 
 ```jldoctest
 julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0  1.0  2.0  0.0  1.0
  0.0  1.0  2.0  0.0  1.0  2.0
  1.0  2.0  0.0  1.0  2.0  0.0
  2.0  0.0  1.0  2.0  0.0  1.0
 
 julia> rref!(A)
-3-element Array{Tuple{Int64,Int64},1}:
+3-element Vector{Tuple{Int64, Int64}}:
  (1, 1)
  (2, 2)
  (3, 3)
 
 julia> A
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
   1.0   0.0  0.0   1.0   0.0  0.0
   0.0   1.0  0.0   0.0   1.0  0.0
  -0.0  -0.0  1.0  -0.0  -0.0  1.0
@@ -329,14 +329,14 @@ function rref!(A; show_steps=false)
     # Multiply row to have pivot = 1
     pivot = A[row, col]
     if pivot != 1
-        row_mul!(A, row, by=inv(pivot))
+        row_mul!(A, row => inv(pivot))
         show_steps && log(A, "Reduce $((row,col)) $pivot -> 1")
     end
 
     # Ensure all zeros above the pivot
     if !all(iszero, A[1:row-1, col])
         for i in 1:row-1
-            row_add!(A, row=>i, -A[i, col])
+            row_add!(A, row => -A[i, col] => i)
         end
         show_steps && log(A, "Reduce above $((row,col))")
     end
@@ -353,14 +353,14 @@ Compute the reduced row echelon form of `A`.
 
 ```jldoctest
 julia> A = Float64[mod(i+j,3) for i in 1:4, j in 1:6]
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
  2.0  0.0  1.0  2.0  0.0  1.0
  0.0  1.0  2.0  0.0  1.0  2.0
  1.0  2.0  0.0  1.0  2.0  0.0
  2.0  0.0  1.0  2.0  0.0  1.0
 
 julia> rref(A)
-4×6 Array{Float64,2}:
+4×6 Matrix{Float64}:
   1.0   0.0  0.0   1.0   0.0  0.0
   0.0   1.0  0.0   0.0   1.0  0.0
  -0.0  -0.0  1.0  -0.0  -0.0  1.0
